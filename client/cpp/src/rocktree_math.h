@@ -1,5 +1,8 @@
 #include <array>
 
+#undef near
+#undef far
+
 // based on @fabioarnold's impl of "https://fgiesen.wordpress.com/2012/08/31/frustum-planes-from-the-projection-matrix/"
 auto getFrustumPlanes(Matrix4d projection) {
 	std::array<Vector4d, 6> planes;
@@ -21,7 +24,7 @@ auto classifyObbFrustum(OrientedBoundingBox* obb, std::array<Vector4d, 6> planes
 	auto result = obb_frustum_inside;
 	auto obb_orientation_t = obb->orientation;
 	obb_orientation_t.transposeInPlace();
-	for (int i = 0; i < 6; i++) {		
+	for (int i = 0; i < 6; i++) {
 		auto plane4 = planes[i];
 		auto plane3 = Vector3d(plane4.data());
 		Vector3d abs_plane = (obb_orientation_t * plane3).cwiseAbs();
@@ -39,7 +42,7 @@ Matrix4d perspective (double fov_rad, double aspect_ratio, double near, double f
 {
     assert(aspect_ratio > 0);
     assert(far > near);
-	
+
     auto tan_half_fovy = tan(fov_rad / 2.0);
 
     Matrix4d res = Matrix4d::Zero();

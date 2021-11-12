@@ -33,12 +33,12 @@ void loadPlanet() {
 	planetoid->downloaded = false;
 	_planetoid = planetoid;
 
-	getPlanetoid([=](std::unique_ptr<PlanetoidMetadata> _metadata) {		
+	getPlanetoid([=](std::unique_ptr<PlanetoidMetadata> _metadata) {
 		if (!_metadata) fprintf(stderr, "%s", "no planetoid\n"), abort();
 		populatePlanetoid(planetoid, std::move(_metadata));
-		
+
 		auto bulk = planetoid->root_bulk;
-		assert(bulk->dl_state == dl_state_stub);		
+		assert(bulk->dl_state == dl_state_stub);
 		bulk->setStartedDownloading();
 		getBulk(bulk->request, bulk, [=](auto _) { /* todo rm cb */ });
 	});
@@ -53,8 +53,8 @@ void initGL(gl_ctx_t &ctx) {
 		"uniform vec2 uv_scale;"
 		"uniform bool octant_mask[8];"
 		"attribute vec3 position;"
-		"attribute float octant;"	
-		"attribute vec2 texcoords;"		
+		"attribute float octant;"
+		"attribute vec2 texcoords;"
 		"varying vec2 v_texcoords;"
 		"void main() {"
 		"	float mask = octant_mask[int(octant)] ? 0.0 : 1.0;"
@@ -94,7 +94,7 @@ void drawPlanet(gl_ctx_t &ctx) {
 	auto planetoid = _planetoid;
 	if (!planetoid) return;
 	if (!planetoid->downloaded) return;
-	if (planetoid->root_bulk->dl_state != dl_state_downloaded) return;	
+	if (planetoid->root_bulk->dl_state != dl_state_downloaded) return;
 	auto current_bulk = planetoid->root_bulk;
 	auto planet_radius = planetoid->radius;
 
@@ -105,7 +105,7 @@ void drawPlanet(gl_ctx_t &ctx) {
 	glViewport(0, 0, width, height);
 	auto sky = 0x83b5fc;
 	glClearColor((sky>>16 & 0xff) / 255.0f, (sky>>8 & 0xff) / 255.0f, (sky & 0xff) / 255.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	auto mouse_state = SDL_GetMouseState(NULL, NULL);
 	auto state = SDL_GetKeyboardState(NULL);
@@ -123,7 +123,7 @@ void drawPlanet(gl_ctx_t &ctx) {
 
 	// nyc
 	static Vector3d eye = { 1329866.230289, -4643494.267515, 4154677.131562 };
-	static Vector3d direction = { 0.219862, 0.419329, 0.312226 };		
+	static Vector3d direction = { 0.219862, 0.419329, 0.312226 };
 
 	// print position every 2 seconds
 	{
@@ -148,7 +148,7 @@ void drawPlanet(gl_ctx_t &ctx) {
 	if (near >= far) near = far - 1;
 	if (isnan(far) || far < near) far = near + 1;
 	projection = perspective(fov, aspect_ratio, near, far);
-	
+
 	// rotation
 	int mouse_x, mouse_y;
 	SDL_GetRelativeMouseState(&mouse_x, &mouse_y);
@@ -170,7 +170,7 @@ void drawPlanet(gl_ctx_t &ctx) {
 	// movement
 	auto speed_amp = fmin(2600, powf(fmax(0, (altitude - 500)/10000)+1, 1.337)) / 6;
 	auto mag = 100*(deltaTime/17.0)*(1+key_boost_pressed*4) * speed_amp;
-	auto sideways = direction.cross(up).normalized();	
+	auto sideways = direction.cross(up).normalized();
 	auto forwards = direction * mag;
 	auto backwards = -direction * mag;
 	auto left = -sideways * mag;
@@ -178,10 +178,10 @@ void drawPlanet(gl_ctx_t &ctx) {
 	auto new_eye =  eye + key_up_pressed * forwards
 	                    + key_down_pressed * backwards
 	                    + key_left_pressed * left
-	                    + key_right_pressed * right;						
+	                    + key_right_pressed * right;
 	auto pot_altitude = new_eye.norm() - planet_radius;
 	if (pot_altitude < 1000 * 1000 * 10) {
-		eye = new_eye;		
+		eye = new_eye;
 	}
 
 	auto view = lookAt(eye, eye + direction, up);
@@ -197,9 +197,9 @@ void drawPlanet(gl_ctx_t &ctx) {
 
 	// todo: improve download order
 	// todo: abort emscripten_fetch_close() https://emscripten.org/docs/api_reference/fetch.html
-	//       and/or emscripten coroutine fetch semaphore	
-	// todo: purge branches less aggressively	
-	// todo: workers instead of shared mem https://emscripten.org/docs/api_reference/emscripten.h.html#worker-api	
+	//       and/or emscripten coroutine fetch semaphore
+	// todo: purge branches less aggressively
+	// todo: workers instead of shared mem https://emscripten.org/docs/api_reference/emscripten.h.html#worker-api
 
 	std::map<std::string, rocktree_t::bulk_t *> potential_bulks;
 
@@ -218,20 +218,20 @@ void drawPlanet(gl_ctx_t &ctx) {
 				potential_bulks[cur] = b;
 				if (b->dl_state == dl_state_stub) {
 					b->setStartedDownloading();
-					getBulk(b->request, b, [=](auto) {});			
+					getBulk(b->request, b, [=](auto) {});
 				}
 				if (b->dl_state != dl_state_downloaded) continue;
 				bulk = b;
 			}
 			potential_bulks[cur] = bulk;
-						
+
 			for(auto o : octs) {
-				auto nxt = cur + o;				
+				auto nxt = cur + o;
 				auto nxt_rel = nxt.substr (floor((nxt.size() - 1) / 4) * 4, 4);
 				auto node_kv = bulk->nodes.find(nxt_rel);
 				if (node_kv == bulk->nodes.end()) // node at "nxt" doesn't exist
-					continue;				
-				auto node = node_kv->second.get();						
+					continue;
+				auto node = node_kv->second.get();
 
 				// cull outside frustum using obb
 				// todo: check if it could cull more
@@ -242,8 +242,8 @@ void drawPlanet(gl_ctx_t &ctx) {
 				// level of detail
 				/*{
 					auto obb_center = node->obb.center;
-					auto obb_max_diameter = fmax(fmax(node->obb.extents[0], node->obb.extents[1]), node->obb.extents[2]);			
-					
+					auto obb_max_diameter = fmax(fmax(node->obb.extents[0], node->obb.extents[1]), node->obb.extents[2]);
+
 					auto t = Affine3d().Identity();
 					t.translate(Vector3d(obb_center.x(), obb_center.y(), obb_center.z()));
 					t.scale(obb_max_diameter);
@@ -260,7 +260,7 @@ void drawPlanet(gl_ctx_t &ctx) {
 				}*/
 
 				{
-					auto t = Affine3d().Identity();					
+					auto t = Affine3d().Identity();
 					t.translate(eye + (eye-node->obb.center).norm() * direction);
 					auto m = viewprojection * t;
 					auto s = m(3, 3);
@@ -282,8 +282,8 @@ void drawPlanet(gl_ctx_t &ctx) {
 		}
 		if (next_valid.size() == 0) break;
 		valid = next_valid;
-		next_valid.clear();		
-	}	
+		next_valid.clear();
+	}
 
 	for (auto kv = potential_nodes.begin(); kv != potential_nodes.end(); ++kv) { // normal order
 	//for (auto kv = potential_nodes.rbegin(); kv != potential_nodes.rend(); ++kv) { // reverse order
@@ -311,10 +311,10 @@ void drawPlanet(gl_ctx_t &ctx) {
 		for (auto &kv : cur_bulk->nodes) {
 			auto n = kv.second.get();
 			if (n->dl_state != dl_state_downloaded) continue;
-			
+
 			// just count buffers
 			for (auto &m : n->meshes) { if (m.buffered) { buf_cnt++; break;}}
-			
+
 			total_n++;
 			auto p = n->request.node_key().path();
 			auto has = potential_nodes.find(p) != potential_nodes.end();
@@ -336,7 +336,7 @@ void drawPlanet(gl_ctx_t &ctx) {
 	}
 
 	// post order dfs purge obsolete bulks
-	auto total_b = 0, obs_b_cnt = 0;	
+	auto total_b = 0, obs_b_cnt = 0;
 	std::function<void(rocktree_t::bulk_t *)> po;
 	po = [&po, &potential_bulks, &obs_b_cnt, &total_b](rocktree_t::bulk_t * b){
 		for (auto &kv : b->bulks){
@@ -352,7 +352,7 @@ void drawPlanet(gl_ctx_t &ctx) {
 				b->nodes.clear();
 				b->bulks.clear();
 				b->setDeleted();
-			}			
+			}
 		}
 	};
 
@@ -364,7 +364,7 @@ void drawPlanet(gl_ctx_t &ctx) {
 		ms += deltaTime;
 		if (ms > 2000) {
 			ms = 0;
-			printf("buffered: %d, tot_n: %d, tot_b: %d, pot_n: %lu, pot_b: %lu, obs n: %d, obs b: %d\n", 
+			printf("buffered: %d, tot_n: %d, tot_b: %d, pot_n: %lu, pot_b: %lu, obs n: %d, obs b: %d\n",
 				buf_cnt, total_n, total_b, potential_nodes.size(), potential_bulks.size(), obs_n_cnt, obs_b_cnt
 			);
 		}
@@ -377,7 +377,7 @@ void drawPlanet(gl_ctx_t &ctx) {
 		auto full_path = kv->first;
 		auto node = kv->second;
 		auto level = strlen(full_path.c_str());
-		assert(level > 0);		
+		assert(level > 0);
 		assert(node->can_have_data);
 		if (node->dl_state != dl_state_downloaded) continue;
 
@@ -426,7 +426,7 @@ void mainloop(gl_ctx_t &ctx) {
 	SDL_GL_SwapWindow(sdl_window);
 }
 
-int main(int argc, char* argv[]) {
+extern "C" void cpp_main() {
 
 	int video_width = 1024;
 	int video_height = 768;
@@ -445,10 +445,10 @@ int main(int argc, char* argv[]) {
 		SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-#endif	
-	sdl_window = SDL_CreateWindow("Earth Client", 
-		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
-		video_width, video_height, 
+#endif
+	sdl_window = SDL_CreateWindow("Earth Client",
+		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+		video_width, video_height,
 		SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 	if (!sdl_window) {
 		fprintf(stderr, "Couldn't create window: %s\n", SDL_GetError());
@@ -477,7 +477,7 @@ int main(int argc, char* argv[]) {
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 
 #ifdef EMSCRIPTEN
-	emscripten_set_main_loop_arg([](void* _ctx){	
+	emscripten_set_main_loop_arg([](void* _ctx){
 		auto ctx = (gl_ctx_t *)_ctx;
 		mainloop(*ctx);
 	}, (void *)ctx, 0, 1);
@@ -489,6 +489,4 @@ int main(int argc, char* argv[]) {
 	SDL_DestroyWindow(sdl_window);
 	SDL_Quit();
 	delete ctx;
-	
-	return 0;
 }

@@ -1,3 +1,9 @@
 [submodule "client/eigen"]
-	path = client/eigen
+	path = external/eigen
 	url = https://github.com/eigenteam/eigen-git-mirror
+[submodule "external/sdl"]
+	path = external/sdl
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "external/protobuf"]
+	path = external/protobuf
+	url = https://github.com/protocolbuffers/protobuf.git
